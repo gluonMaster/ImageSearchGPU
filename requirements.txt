@@ -1,0 +1,29 @@
+# Основные зависимости для приложения поиска изображений
+
+# ВАЖНО: Для RTX 2060 и других NVIDIA GPU рекомендуется установить CUDA версию:
+# pip uninstall torch torchvision
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+# Основная библиотека для работы с CLIP моделями
+sentence-transformers>=2.2.2
+
+# Библиотеки для работы с изображениями
+Pillow>=9.0.0
+
+# Машинное обучение и тензорные вычисления
+# CPU версия (по умолчанию):
+torch>=2.0.0
+torchvision>=0.15.0
+
+# GPU версия (для RTX 2060 - раскомментируйте строки ниже и закомментируйте CPU версию):
+# --index-url https://download.pytorch.org/whl/cu118
+# torch>=2.0.0
+# torchvision>=0.15.0
+
+# Научные вычисления
+numpy>=1.21.0
+
+# Мониторинг системных ресурсов
+psutil>=5.9.0
+
+# Автоматическая настройка GPU: запустите setup_gpu.bat после установки
