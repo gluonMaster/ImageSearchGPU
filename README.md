@@ -1,23 +1,20 @@
 # ImageSearchGPU
 
-A desktop application for searching local photo collections with natural-language descriptions. It uses CLIP embeddings through Sentence Transformers, a Tkinter interface, and optional NVIDIA GPU acceleration.
+Find photos in a local archive by describing them: "cat on a sofa", "sunset at the beach", "children at a birthday party". ImageSearchGPU indexes your folders with the CLIP model and ranks every picture by how well it matches the text. It runs entirely on your own computer; an NVIDIA GPU makes indexing much faster but is not required.
 
-The project addresses a practical problem: finding a photo by its contents when filenames and folders are not enough.
+I wrote it for a large family photo archive where file names and folders were no help in finding a particular picture.
 
 ## Features
 
-- Index JPEG and PNG images from selected folders.
-- Rank images by similarity to a text query and display thumbnails and file details.
-- Reuse cached embeddings for subsequent searches.
-- Process indexing work in chunks, with progress reporting and memory checks.
-- Filter results by recency and limit the number of matches.
-- Copy selected photos into date-based folders, adding a suffix when a filename already exists.
+- Indexes JPEG and PNG files in the folders you choose and caches the embeddings, so later searches are instant.
+- Ranks images by similarity to a text query and shows thumbnails with file details.
+- Filters by recency and limits the number of results.
+- Processes big collections in chunks with a progress bar and memory checks.
+- Copies selected photos into folders by date (from EXIF, or the file date as a fallback) without overwriting existing files.
 
 ## Getting started on Windows
 
-Use Python with pip and Tkinter, in a version supported by your chosen PyTorch and Sentence Transformers releases. Current upstream guidance recommends Python 3.10 or later; consult the [Sentence Transformers installation guide](https://www.sbert.net/docs/installation.html) and [PyTorch installation selector](https://pytorch.org/get-started/locally/) for compatible packages.
-
-From PowerShell in the project directory:
+Use a Python version that your PyTorch and Sentence Transformers releases support (3.10 or newer at the time of writing). In PowerShell, from the project folder:
 
 ```powershell
 python -m venv .venv
@@ -26,72 +23,69 @@ python -m venv .venv
 .\.venv\Scripts\python.exe main.py
 ```
 
-The first model load requires an internet connection to download model files. Subsequent indexing and similarity calculations run locally using the downloaded model.
+The first start downloads the CLIP model; after that, indexing and search work offline. Try a small folder of pictures first before indexing a whole archive. The requirements set minimum versions only, so a very new release of a dependency may need an adjustment.
 
-Start with a small folder of non-sensitive sample images before indexing a large archive. Dependencies use minimum versions rather than a fully pinned environment, so compatibility with every newer dependency release is not guaranteed.
+### GPU
 
-### Optional GPU setup
-
-Install a CUDA-enabled PyTorch build compatible with your Python version, GPU, and driver using the [official installation selector](https://pytorch.org/get-started/locally/). Run its installation command with the virtual environment's Python executable.
-
-Check CUDA availability without starting the application:
+Install a CUDA build of PyTorch that fits your GPU and driver with the [official selector](https://pytorch.org/get-started/locally/), using the virtual environment's Python. To check that it works:
 
 ```powershell
 .\.venv\Scripts\python.exe -c "import torch; print(torch.cuda.is_available())"
 ```
 
-The application uses CUDA when available and otherwise falls back to CPU. Throughput and memory requirements depend on hardware, image sizes, and configuration; there is no fixed collection-size or speed guarantee.
+The app uses CUDA when it is available and falls back to the CPU otherwise.
 
-### Windows helper scripts
+### Helper scripts
 
 | File | Purpose |
 | --- | --- |
-| [install.bat](install.bat) | Interactive CPU/GPU installer; creates a `start_app.bat` launcher. |
-| [smart_update.bat](smart_update.bat) | Interactive dependency updates for an existing environment. |
-| [run.bat](run.bat) | Activates `venv` if present, otherwise uses the current Python environment. For `.venv`, use the explicit command above or the generated launcher. |
-| [system_check.py](system_check.py) | Interactive environment diagnostics. |
-| [gpu_setup.py](gpu_setup.py) | Interactive GPU helper that can reinstall PyTorch after confirmation. |
+| [install.bat](install.bat) | Interactive CPU or GPU install; creates a `start_app.bat` launcher |
+| [smart_update.bat](smart_update.bat) | Interactive dependency update |
+| [run.bat](run.bat) | Starts the app from `venv` if present, otherwise from the current Python |
+| [system_check.py](system_check.py) | Environment diagnostics |
+| [gpu_setup.py](gpu_setup.py) | GPU helper that can reinstall PyTorch after asking |
 
-The helper scripts contain legacy CUDA 11.8 installation commands. Prefer the upstream selector for a current GPU environment. These scripts are interactive, not unattended installers.
+The batch scripts still install the older CUDA 11.8 builds. For a current GPU setup, the PyTorch selector above is the better choice.
 
-## Basic workflow
+## How to use it
 
-1. Choose the folders to search and build an index.
-2. Enter a short description, such as `cat on a sofa` or `sunset at the beach`.
-3. Inspect the ranked results, adjust the result limit or recency filter, and open matching images.
-4. Optionally select photos and copy them to an output folder. Copies are grouped by EXIF date, falling back to file modification time.
+1. Choose the folders to search and build the index.
+2. Type a short description of the picture you are looking for.
+3. Go through the ranked results, change the number of results or the date filter, and open the pictures you want.
+4. Optionally select photos and copy them to an output folder, sorted by date.
 
-Search quality depends on the selected model and query language. Similarity scores are rankings, not calibrated probabilities.
+How well a query works depends on the model and the language of the query; the default model understands English best. The scores rank the results, they are not probabilities.
 
 ## How it works
 
-`file_scanner.py` discovers images. `image_analyzer.py` encodes images and text with the model selected in `config.py`. `cache_manager.py` stores embeddings and metadata, while `search_engine.py` coordinates indexing and search. The `ui/` modules display results, and `photo_saver.py` copies selected files.
-
-## Configuration
+`file_scanner.py` finds the images, `image_analyzer.py` turns images and text into embeddings with the model set in `config.py`, `cache_manager.py` stores the embeddings and metadata, and `search_engine.py` ties indexing and search together. The `ui/` package is the Tkinter interface, and `photo_saver.py` copies the selected files.
 
 The main settings are in [config.py](config.py):
 
-| Setting | Default / purpose |
+| Setting | Default |
 | --- | --- |
 | `CLIP_MODEL_NAME` | `clip-ViT-B-32` |
 | `CHUNK_SIZE` | 1,000 images per indexing chunk |
 | `CLIP_BATCH_SIZE_CPU` / `CLIP_BATCH_SIZE_GPU` | 8 / 32 images per model batch |
 | `MAX_RESULTS_DEFAULT` | 20 results |
 | `SIMILARITY_THRESHOLD` | 0.1 |
-| `WARNING_MEMORY_GB` / `MIN_MEMORY_GB` | 2 GB warning / 1 GB cancellation threshold |
+| `WARNING_MEMORY_GB` / `MIN_MEMORY_GB` | warn at 2 GB, stop at 1 GB of free memory |
 
-Chunk size and model batch size serve different purposes. Reduce batch size when model inference runs out of memory; begin with smaller input folders when diagnosing indexing problems.
+If the model runs out of memory, lower the batch size; if indexing fails, try a smaller folder first.
 
-## Local data
+## Your photos stay local
 
-Keep personal photos and exported results outside the repository. The application stores embeddings, metadata, and selected-folder information under `cache/` and writes `image_search.log`. These can contain local filenames and paths and are excluded from Git.
+Nothing is uploaded. The index lives in `cache/` and the log in `image_search.log`; both contain local file names and paths and are excluded from Git. The cache uses Python pickle, so only load caches created by your own installation and rebuild instead of importing someone else's.
 
-Use only cache files created by your own trusted installation: the cache format uses Python pickle. Rebuild the cache instead of importing an untrusted cache file.
+## Troubleshooting
 
-## Troubleshooting and further reading
+- Start the app with the same virtual environment you installed into.
+- For import errors, check package versions before touching the global Python installation.
+- For GPU problems, check `torch.cuda.is_available()` and which PyTorch build is installed.
+- For indexing errors, look at `image_search.log`, file permissions and whether the files are valid JPEG or PNG images.
 
-- Launch with the same virtual environment used to install dependencies.
-- For import errors, check package compatibility before changing the global Python installation.
-- For GPU issues, check `torch.cuda.is_available()` and the installed PyTorch build.
-- For indexing errors, inspect `image_search.log`, file permissions, and whether the input files are valid JPEG/PNG images.
-- The [English user guide](reports/USER_GUIDE_EN.md) and [Russian user guide](reports/USER_GUIDE.md) provide more interface details. Older helper instructions in these guides may differ from the setup instructions above.
+The [English user guide](reports/USER_GUIDE_EN.md) and the [Russian user guide](reports/USER_GUIDE.md) describe the interface in more detail; their installation notes are older than this README.
+
+## License
+
+[MIT](LICENSE). Developed by Dr. Konstantin S. Shakun with the help of AI coding agents.
