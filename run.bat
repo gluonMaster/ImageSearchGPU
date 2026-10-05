@@ -16,7 +16,7 @@ REM Check if Python is available
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Python not found!
-    echo Please run install_and_run.bat first
+    echo Please install Python and follow README.md or run install.bat first
     pause
     exit /b 1
 )

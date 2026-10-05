@@ -1,0 +1,20 @@
+# Python environments and bytecode
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local image indexes, paths, and logs
+/cache/
+*.log
+
+# Generated installation files
+/start_app.bat
+/installation_info.txt
+/update_info.txt
+/config.py.backup
+
+# Local configuration
+.env
+.env.*
+!.env.example
